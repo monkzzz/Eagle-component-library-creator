@@ -11,7 +11,7 @@ def line_indicator(component, pads, pads_text, version):
     # ----------------------------------------
 
     # - - - Line under pad one - - - 
-    if version == 1:
+    if version == "1":
         # Single
         if component['package_type'] == "single_package":
             # Line coordinates
@@ -72,7 +72,7 @@ def dot_indicator(component, pads, pads_text, version):
     width = round(pads[0]['dy'])
 
     # - - - Dot next to pad one - - - 
-    if version == 1:
+    if version == "1":
         # Single
         if component['package_type'] == "single_package":
             # Dot coordinates
@@ -88,7 +88,7 @@ def dot_indicator(component, pads, pads_text, version):
             y_pos = round(pads[0]['y'], 2)
 
     # - - - Dot over the pad one - - - 
-    elif version == 2:
+    elif version == "2":
         # Single
         if component['package_type'] == "single_package":
             # Dot coordinates
@@ -139,7 +139,7 @@ def triangle_indicator(component, pads, pads_text, version):
     # ----------------------------------------
 
     # - - - Triangle next to pad one - - - 
-    if version == 1:
+    if version == "1":
 
         # Single
         if component['package_type'] == "single_package":
@@ -166,7 +166,7 @@ def triangle_indicator(component, pads, pads_text, version):
             y_3 = (pads[0]['y'] + (pads[0]['dy']))
 
     # - - - Triangle over pad one - - - 
-    if version == 2:
+    if version == "2":
 
         # Single
         if component['package_type'] == "single_package":
@@ -193,12 +193,12 @@ def triangle_indicator(component, pads, pads_text, version):
             y_3 = pads[0]['dy'] + 0.254 + (pads[0]['y'] + ((pads[0]['dy'] * 3**(1.0/2)) / 2))
 
     # - - - Triangle on top corner if quad-package else is over pad one - - - 
-    if version == 3:
+    if version == "3":
 
         # Quad
         if component['package_type'] == "quad_package":
             # Change last pad based on having or not a Bottom/Center/Thermal pad
-            if component['center_pad'] == '1':
+            if component['center_pad'] == "1":
                 last_pad = pads[-2]['y']
             else:
                 last_pad = pads[-1]['y']
@@ -370,7 +370,7 @@ def counting_indicator(component, pads, pads_text, version):
                 # - - - Pin numbers - - - 
 
                 # Only add pin number text in multiples of 10 if version 2
-                if version == 2:
+                if version == "2":
                     # Create number Text
                     pads_text.append(
                         f"<text x=\"{x_text}\" y=\"{y_text}\" align=\"center\" size=\"0.38\" layer=\"25\" rot=\"{rot}\">{pad['name']}</text>")
@@ -380,7 +380,7 @@ def counting_indicator(component, pads, pads_text, version):
                     f"<wire x1=\"{l_x_1}\" y1=\"{l_y_1}\" x2=\"{l_x_2}\" y2=\"{l_y_2}\" width=\"0.127\" layer=\"21\"/>")
 
             # - - - Text on edges - - - 
-            if version == 3:
+            if version == "3":
 
                 # Distance if number has 3 digits
                 if int(pad['name']) >= 99:
