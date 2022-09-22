@@ -9,7 +9,7 @@ pin_list = list()
 smd_pads = list()
 
 def main():
-
+    
     # Component and library questions function
     lib_name, component = questions.component_questions()
 
@@ -707,3 +707,5 @@ def append_txt(file_edit, text):
         output.write(text + "\n")
         return True
 
+if __name__ == "__main__":
+    main()
