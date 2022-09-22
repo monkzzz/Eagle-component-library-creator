@@ -46,7 +46,7 @@ def dual_package_pins(component, pin_name, pin_number, pin_direction, pin_space,
 # - - - Quad Package pins - - -
 
 def quad_package_pins(component, pin_name, pin_number, pin_direction, pin_space, j, k):
-    if component['center_pad'] == '1':
+    if component['center_pad'] == 1:
         r = pin_space
 
     else:
