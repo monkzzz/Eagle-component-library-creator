@@ -6,7 +6,7 @@ coordinates_list = list()
 # - - - Single Package Wires - - -
 def single_package_wires(component, pin_space):
         
-    if component['center_pad'] == "1":
+    if component['center_pad'] == 1:
         r = 2
 
     else:
@@ -74,7 +74,7 @@ def dual_package_wires(component, pin_space):
 # - - - Quad Package Wires - - -
 
 def quad_package_wires(component, pin_space):
-    if component['center_pad'] == '1':
+    if component['center_pad'] == 1:
         r = 1
 
     else:
