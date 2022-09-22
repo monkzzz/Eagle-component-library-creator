@@ -4,7 +4,7 @@ component = dict()
 single_package_smt = ["SIL"]
 
 small_outline_package = ["DFN", "DIL", "SOIC", "SOJ", "SON", "PSON", "WSON", "USON", "SOP", "CSOP", "DSOP", "HSOP",
-                         "SSOP", "TSOP",  "HTSOP", "VSOP", "TVSOP" "MSOP", "PSOP", "QSOP", "SSOP", "HSSOP",  "TSSOP", "VSSOP", "HTSSOP", "TSOP"]
+                         "SSOP", "TSOP", "HTSOP", "VSOP", "TVSOP", "MSOP", "PSOP", "QSOP", "SSOP", "HSSOP",  "TSSOP", "VSSOP", "HTSSOP", "TSOP"]
 
 quad_flat_package = ["DFN", "QFN", "PQFN",
                      "UQFN", "VQFN", "HVQFN", "WQFN", "CFP", "QFP",  "BQFP", "CQFP", "LQFP", "MQFP", "PQFP", "TQFP", "ETQFP", "VQFP"]
