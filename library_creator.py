@@ -1,288 +1,203 @@
+import questions
+import orientation
+import symbol_pins_types
+import symbol_wires_types
+
+coordinates_list = list()
 component = dict()
 pin_list = list()
 smd_pads = list()
 
 def main():
 
-    # Ask all questions for storing component data
-    lib_name, component = component_questions_set()
+    # Component and library questions function
+    lib_name, component = questions.component_questions()
 
     # Create first text part of lbr file
     create_txt(lib_name, component)
 
-    # Create and store package data text part on lbr file
-    smd_pads = package_create(lib_name, component)
-    pins = simbol_create(lib_name, component)
+    # Create and add Footprint data to lbr file
+    smd_pads = footprint_create(lib_name, component)
 
-    # Create and store device text part on lbr file
+    # Create and add Symbol data to lbr file
+    pins = simbol_create(lib_name, component, pin_list)
+
+    # Add device text on lbr file
     device_sets_txt(lib_name, component)
 
-    # Create and store conects text part on lbr file
+    # Connect Symbol pins to Footprint pads
     connects_txt(lib_name, smd_pads, pins)
 
-    # Create and store conects text part on lbr file
+    # Add text part to lbr file
     technologies_txt(lib_name, component)
 
     print("Library Created")
 
+# ----------------- Footprint Creation Part -----------------
+# Footprint creation main function
+def footprint_create(lib_name, component):
 
-# Questions for Library and Component data
-def component_questions_set():
+    # List to store the pads
+    pad = list()
 
-    # Default values
-    lib_name = ''
-    component['name'] = ''
-    component['package'] = ''
-    component['datasheet'] = ''
-    component['pins'] = ''
+    # - - - Pads - - -
+    # Single
+    if component['package_type'] == "single_package":
+        # Bottom
+        bottom_pads =  component['pins']
+        orientation = -1
 
-    # Library name
-    while not lib_name:
-        print("")
-        print("What is the name of the library? (required)")
-        lib_name = input().strip().replace(" ", "_")
+        # Pad X coordinates
+        pads = pads_location(component, pad, bottom_pads, orientation)
 
-    # Name
-    while not component['name']:
-        print("")
-        print("What is the name of the component? (required)")
-        component['name'] = input().strip().replace(" ", "_").upper()
+        for i in range(component['pins']):
+            # Create list of pads data
+            smd_pads.append({'name': i+1, 'x': pads[i],
+                        'y': -component['pads_distance_c_b'], 'dx': component['pads_length'], 'dy': component['pads_width'], 'layer': "1", 'rot': "R90"})
 
-    # Value
-    print("")
-    print("What is the value of the component? (optional)")
-    component['value'] = input().strip().replace(" ", "_").upper()
-    if not component['value']:
-        component['value'] = "default_value"
+    # Dual
+    elif component['package_type'] == "dual_package":
 
-    # Description
-    print("")
-    print("What is the description? (optional)")
-    component['description'] = input().strip()
-    if not component['description']:
-        component['description'] = "default_description"
+        # Left side
+        left_pads =  component['quad_l_r_pins']
+        orientation = 1
 
-    # Datasheet
-    print("")
-    print("What is the link to the datasheet? (optional)")
-    component['datasheet'] = input().strip()
+        # Pad Y coordinate
+        pad = pads_location(component, pad, left_pads, orientation)
 
-    # Package
-    while not component['package']:
-        print("")
-        print("What is the package? (required)")
-        component['package'] = input().strip().replace(" ", "_").upper()
+        # Right Side
+        right_pads =  component['quad_l_r_pins']
+        orientation = -1
 
-    # Total number of pins
-    while not component['pins']:
-        try:
-            print("")
-            print("How many pins does it have? (required)")
-            component['pins'] = int(input())
-            if component['pins'] % 2 != 0:
-                print("Not a pair number")
-                component['pins'] = ''
+        # Pad Y coordinate
+        pad = pads_location(component, pad, right_pads, orientation)
 
-        except ValueError:
-            print("Not a number")
+        for i in range(component['pins']):
+            # Left pad
+            if i <component['quad_l_r_pins']:
+                # X coordinate
+                x_pos = -component['pads_distance_l_r']/2
+                # Pad rotation
+                rot = "R0"
 
-# Questions for Component Sizing
+            # Right pad
+            else:
+                # X coordinates
+                x_pos = component['pads_distance_l_r']/2
+                # Pad rotation
+                rot = "R180"
 
-    # Default values
-    component['length'] = ''
-    component['width'] = ''
-    component['spacing'] = ''
-    component['pads_length'] = ''
-    component['pads_width'] = ''
-    component['pads_distance'] = ''
+            # Create list of pads data
+            smd_pads.append({'name': i+1, 'x': x_pos,
+                        'y': pad[i], 'dx': component['pads_length'], 'dy': component['pads_width'], 'layer': "1", 'rot': rot})
 
-    print("              ")
-    print("   ---------  ")
-    print(" --|O      |--")
-    print("   |       |  ")
-    print(" --|      L|--")
-    print("   |       |  ")
-    print(" --|       |--")
-    print("   ---------  ")
-    print("       w      ")
+    # Quad package
+    elif component['package_type'] == "quad_package":
+        
+        # Left Side
+        left_pads =  component['quad_l_r_pins']
+        orientation = 1
 
-    # Ask lenght
-    while not component['length']:
-        try:
-            print("")
-            print("What is the lenght(L)? (mm) (required) ")
-            component['length'] = float(input())
+        # Pad Y coordinate
+        pad = pads_location(component, pad, left_pads, orientation)
 
-        except ValueError:
-            print("Not a number")
+        # Bottom Side
+        bottom_pads =  component['quad_t_b_pins']
+        orientation = -1
 
-    # Ask width
-    while not component['width']:
-        try:
-            print("")
-            print("What is the width(W)? (mm) (required)")
-            component['width'] = float(input())
+        # Pad X coordinate
+        pads = pads_location(component, pad, bottom_pads, orientation)
 
-        except ValueError:
-            print("Not a number")
+        # Right Side
+        right_pads =  component['quad_l_r_pins']
+        orientation = -1
 
-    print("                 ")
-    print("   ---------     ")
-    print(" --|O      |--   ")
-    print("   |       | ^   ")
-    print("   |       | | S ")
-    print("   |       | v   ")
-    print(" --|       |--   ")
+        # Pad Y coordinate
+        pad = pads_location(component, pad, right_pads, orientation)
 
-    # Ask spacing value
-    while not component['spacing']:
-        try:
-            print("")
-            print("How much is the spacing(S) between pins? (mm) (required)")
-            component['spacing'] = float(input())
+        # Top Side
+        top_pads =  component['quad_t_b_pins']
+        orientation = 1
 
-        except ValueError:
-            print("Not a number")
+        # Pad X coordinate
+        pad = pads_location(component, pad, top_pads, orientation)
 
-    # Size of pads
-    print("         L       ")
-    print("  -------------- ")
-    print("  |        ____|_")
-    print("  | W     |______")
-    print("  |            | ")
-    print("  -------------- ")
+        # Go through pads
+        for i in range(component['pins']):
 
-    # Ask pad length
-    while not component['pads_length']:
-        try:
-            print("")
-            print("How much is the length of the pad? (mm) (required)")
-            component['pads_length'] = float(input())
+            # Left pad
+            if i <(component['quad_l_r_pins']):
+                # X coordinate
+                x_pos = -component['pads_distance_l_r']/2
+                # Y coordinate
+                y_pos = pad[i]
+                # Pad rotation
+                rot = "R0"
 
-        except ValueError:
-            print("Not a number")
+            # Bottom pad
+            elif component['quad_l_r_pins'] <= i < (component['quad_l_r_pins'] + component['quad_t_b_pins']): 
+                # X coordinate
+                x_pos = pad[i]
+                # Y coordinate
+                y_pos = -(component['pads_distance_t_b']) / 2
+                # Pad rotation
+                rot = "R90"
 
-    # Ask pad width
-    while not component['pads_width']:
-        try:
-            print("")
-            print("How much is the width of the pad? (mm) (required)")
-            component['pads_width'] = float(input())
+            # Check if right pin
+            elif component['quad_l_r_pins']  + component['quad_t_b_pins'] <= i < ( (2 *component['quad_l_r_pins']) + component['quad_t_b_pins']): 
+                # Put it on the right side
+                x_pos = component['pads_distance_l_r'] / 2.
+                y_pos = pad[i]
+                
+                # Pad rotation
+                rot = "R180"
 
-        except ValueError:
-            print("Not a number")
+            # Check if top pin
+            else:
+                # Put it on the top side
+                x_pos = pad[i]
+                y_pos = component['pads_distance_t_b']/2
+                # Pad rotation
+                rot = "R270"
 
-    print("                   ")
-    print("   < - - P - - >   ")
-    print("     ---------     ")
-    print(" [-]-|O      |-[-] ")
-    print("     |       |     ")
-    print(" [-]-|       |-[-] ")
-    print("     |       |     ")
+            # Create list of pads data
+            smd_pads.append({'name': i+1, 'x': x_pos,
+                        'y': y_pos, 'dx': component['pads_length'], 'dy': component['pads_width'], 'layer': "1", 'rot': rot})
 
-    # Ask distance between Pads
-    while not component['pads_distance']:
-        try:
-            print("")
-            print("How much is the distance(P) between the pads center? (mm) (required)")
-            component['pads_distance'] = float(input())
+    # Bottom/Center/Thermal pad
+    if component['center_pad'] == 1:
+        # Add data to list 
+        smd_pads.append({'name': i+2, 'x': 0,
+                        'y': 0, 'dx': component['center_pad_length'], 'dy': component['center_pad_width'], 'layer': "1", 'rot': "R0"})
+    
+    # - - - Wires - - -
+    # Distance in X axis between pads edge for drawing wires
+    # Single
+    if component['package_type'] == "single_package":
+        y_space = component['pads_distance_c_b'] - (component['pads_length']/2)
+        x_space =''
 
-        except ValueError:
-            print("Not a number")
+    # Dual
+    if component['package_type'] == "dual_package":
+        x_space = component['pads_distance_l_r'] - (component['pads_length']/2)
+        y_space =''
 
-    return lib_name, component
-
-# ----------------- Questions Part -----------------
-# Questions for pin data
-
-
-def pin_questions_set(pin_number, pin_list):
-    # Default values
-    pin_name = ''
-    pin_direction = ''
-
-    # Create direction list
-    direction_list = ["nc", "in", "out", "io",
-                      "oc", "pwr", "pas", "hiz", "sup"]
-
-    # Ask Pin Name
-    while not pin_name:
-        print("")
-        print(f"What is the name of pin{pin_number + 1} ? (required)")
-        pin_name = input().strip().replace(" ", "_")
-
-        # Check if Pin name is unique
-        if not any(p['name'] == pin_name for p in pin_list):
-            continue
-        else:
-            print("")
-            print("Pin name already used")
-            pin_name = ''
-
-    # Ask Pin Direction
-    while (pin_direction not in direction_list):
-
-        print("")
-        print(f"What is the direction of pin{pin_number + 1} ? (required)")
-        print("Directions: nc, in, out, io, oc, pwr, pas, hiz, sup")
-        pin_direction = input().lower().strip()
-
-    return pin_name, pin_direction
-
-
-# ----------------- Package Creation Part -----------------
-# Package creation main function
-
-
-def package_create(lib_name, component):
-    # if total pins divided by 2 gives a decimal (odd number)
-    # center the midle pin of the package
-    # if not
-    # divide spacing
-
-    # Distance between inside x pads edge
-    x_space = component['pads_distance'] - (component['pads_length']/2)
-
-    # Run function of distribution based on package
-    y_distribution_list = pads_y_location(component)
-
-    # Create smd pads data
-    for i in range(component['pins']):
-        # Check if pin is on the first half
-        if i <(int(component['pins'])/2):
-            # Put it on the left side of package
-            x_pos = -component['pads_distance']/2
-
-        else:
-            # Put it on the right side of package
-            x_pos = component['pads_distance']/2
-
-        # Create list of pads data
-        smd_pads.append({'name': i+1, 'x': x_pos,
-                        'y': y_distribution_list[i], 'dx': component['pads_length'], 'dy': component['pads_width'], 'layer': "1", 'rot': "R0"})
+    # Quad 
+    if component['package_type'] == "quad_package":
+        x_space = component['pads_distance_l_r'] - (component['pads_length']/2)
+        y_space = component['pads_distance_t_b'] - (component['pads_length']/2)
 
     # Draw the pads
-    package_pads_txt(lib_name, component, smd_pads)
+    footprint_pads_txt(lib_name, component, smd_pads)
 
-    # Draw the package wires
-    package_wires_txt(lib_name, component, x_space)
+    # Draw the footprint wires
+    footprint_wires_txt(lib_name, component, x_space, y_space)
 
     # Return the list
     return smd_pads
 
-
-# Function to define y pad location
-def pads_y_location(component):
-
-    # Get how many pins are in side
-    side = component['pins']/2
-
-    # Create a Pad list to store pads positions
-    pad = list()
-
-    # Fill the pad list with empty data
-    for i in range(component['pins']):
-        pad.append("")
+# Function to define x pad location
+def pads_location(component, pad, side, signal):
 
     # If odd number of pins
     if side % 2 == 1:
@@ -290,24 +205,16 @@ def pads_y_location(component):
         # calc the multiplier
         multi = int(side/2)
 
-        # Go through the pins on the left side
+        # Go through the pins on the side
         for i in range(int(side)):
 
-            #Calc the y position of the left pin[i]
-            pad[i] = (multi * component['spacing']) - \
-                (i * component['spacing'])
+            #Calc the y position of the pin[i] 
+            pad.append(signal*((multi * component['spacing']) - (i * component['spacing'])))
 
-        # Go through the pins on the right side
-        for i in range(int(side)):
-
-            # Calc the y position of the right pin[i]
-            pad[i+int(side)] = -(multi * component['spacing']) + \
-                (i * component['spacing'])
-
-    # If even
+       # If even
     else:
 
-        # Get half of the spacing
+        # half of the spacing
         half = component['spacing']/2
 
         # calc the multiplier
@@ -315,86 +222,60 @@ def pads_y_location(component):
 
         # Go through the pins on the left side
         for i in range(int(side)):
+            #Calc the y position of the pin[i]
+            pad.append(signal*((multi * half) - (i * component['spacing'])))
 
-            # Calc the y position of the left pin[i]
-            pad[i] = (multi * half) - (i * component['spacing'])
-
-        # Go through the pins on the right side
-        for i in range(int(side)):
-
-            # Calc the y position of the right pin[i]
-            pad[i+int(side)] = -(multi * half) + (i * component['spacing'])
-
-    return pad
+    return pad  
 
 # ----------------- Symbol Creation Part -----------------
 # Symbol creation main function
 
+def simbol_create(lib_name, component, pin_list):
 
-def simbol_create(lib_name, component):
-
-    #pins = component['pins']
-
-    # Create list to store the coordinates of the wires
-    coordinates_list = list()
-
-    # Default value for space between pins
+    # Default value for symbol space between pins
     pin_space = 2.54
 
     j = 0.0
+    k = 0.0
 
-    # Itirate through pins
+    # - - - Pins - - -
     for pin_number in range(component['pins']):
 
-        # Ask name of pins
-        pin_name, pin_direction = pin_questions_set(pin_number, pin_list)
+        # Ask pin info
+        pin_name, pin_direction = questions.pin_questions(pin_number, pin_list)
+       
+        # Single
+        if component['package_type'] == "single_package":
+            pin_list, j = symbol_pins_types.single_package_pins(pin_name, pin_number, pin_direction, pin_space, j)
+        
+        # Dual
+        elif component['package_type'] == "dual_package":
+            pin_list, j = symbol_pins_types.dual_package_pins(component, pin_name, pin_number, pin_direction, pin_space, j)
+        
+        # Quad
+        elif component['package_type'] == "quad_package":
+            pin_list, j, k = symbol_pins_types.quad_package_pins(component, pin_name, pin_number, pin_direction, pin_space, j, k)
+            
 
-        # Divide pin number by 2
-        # Then arrange half on the left and half on the right of the square
+    # - - - Center Pad pin- - -
+    if component['center_pad'] == 1:
+        center_name, center_direction = questions.center_pad_questions(pin_list)
+        
+        pin_list= symbol_pins_types.central_pins(component, center_name, pin_number, center_direction, pin_space)
 
-        # Check if pin is on the left side
-        if pin_number < (component['pins'] / 2):
 
-            j = round(j, 2)
+    # - - - Wires - - -
+    # Single
+    if component['package_type'] == "single_package":
+        coordinates_list = symbol_wires_types.single_package_wires(component, pin_space)
 
-            # Add pins to list
-            pin_list.append({'number': pin_number+1, 'name': pin_name.upper(),
-                            'direction': pin_direction, 'x': "0", 'y': j, 'side': "R0"})
+    # Dual
+    elif component['package_type'] == "dual_package":
+        coordinates_list = symbol_wires_types.dual_package_wires(component, pin_space)
 
-            j -= pin_space
-
-        # On the right side
-        else:
-
-            j += pin_space
-            j = round(j, 2)
-
-            # Add pins to list
-            pin_list.append({'number': pin_number+1, 'name': pin_name.upper(),
-                            'direction': pin_direction, 'x': pin_space * 11, 'y': j, 'side': "R180"})
-
-    # Check if the total number of pins are even
-    if (component['pins'] % 2) == 0:
-        # Calc the max y coordinate
-        y = - ((component['pins'])/2) * pin_space
-
-    # Or odd
-    else:
-        # Calc the max y coordinate
-        y = - ((component['pins'] + 1)/2) * pin_space
-
-    # Round value
-    y = round(y, 2)
-
-    # Add coordinates to list
-    coordinates_list.append(pin_space*2)
-    coordinates_list.append(pin_space)
-    coordinates_list.append(pin_space*9)
-    coordinates_list.append(pin_space)
-    coordinates_list.append(pin_space*9)
-    coordinates_list.append(y)
-    coordinates_list.append(pin_space*2)
-    coordinates_list.append(y)
+    # Quad
+    elif component['package_type'] == "quad_package":
+        coordinates_list = symbol_wires_types.quad_package_wires(component, pin_space)
 
     # Symbol wires text generation
     symbol_wires_txt(lib_name, component, coordinates_list)
@@ -407,50 +288,76 @@ def simbol_create(lib_name, component):
 
 # ----------------- Text Creation Part -----------------
 
-# --- Package ---
-# Package pads txt function
+# - - - Footprint - - -
+# Footprint pads txt function
 
-
-def package_pads_txt(lib_name, component, pads):
-    # Create list to store the text
+def footprint_pads_txt(lib_name, component, pads):
+    # Orientation Type questions
+    orientation_symbol, orientation_position, pin_counter = questions.orientation_questions()
+    
+    # Pads text list
     pads_text = list()
 
-    # Go through all the pads
     for pad in pads:
         # Create the pad line of text
         pads_text.append(
             f"<smd name=\"{pad['name']}\" x=\"{pad['x']}\" y=\"{pad['y']}\" dx=\"{pad['dx']}\" dy=\"{pad['dy']}\" layer=\"{pad['layer']}\" rot=\"{pad['rot']}\"/>")
 
-        # Get position of last pad to use in text position
-        text_pos = -round(pad['y'] + 1.50, 2)
+    # Calc the name text coordinates based on last pad
+    # Single
+    if component['package_type'] == "single_package":
+        if component['center_pad'] == 1:
+            text_pos_name = round(pads[-2]['y'] - 1.91, 2)
+        else:
+            text_pos_name = round(pads[-1]['y'] - 1.91, 2)
 
-        # Create the name and value lines of text
-    pads_text.append(
-        f"<text x=\"0\" y=\"{text_pos}\" align=\"center\" size=\"1.27\" layer=\"25\" rot=\"R0\">&gt;{component['name']}</text>")
-    pads_text.append(
-        f"<text x=\"0\" y=\"{text_pos - 1.50}\" align=\"center\" size=\"1.27\" layer=\"27\" rot=\"R0\">&gt;{component['value']}</text>")
+    # Dual and Quad
+    else:
+        if component['center_pad'] == 1:
+            text_pos_name = -round(pads[-2]['y'] + 1.91, 2)
+        else:
+            text_pos_name = -round(pads[-1]['y'] + 1.91, 2)
 
-    # Append lines of text to lbr file
+    # Value text beneath Name
+    text_pos_value = text_pos_name - 1.91
+
+    # Create the name and value lines of text
+    pads_text.append(
+        f"<text x=\"0\" y=\"{text_pos_name}\" align=\"center\" size=\"1.27\" layer=\"25\" rot=\"R0\">&gt;{component['name']}</text>")
+    pads_text.append(
+        f"<text x=\"0\" y=\"{text_pos_value}\" align=\"center\" size=\"1.27\" layer=\"27\" rot=\"R0\">&gt;{component['value']}</text>")
+
+    if orientation_symbol == 1:
+        pads_text = orientation.line_indicator(component, pads, pads_text, orientation_position)
+    elif orientation_symbol == 2:
+        pads_text = orientation.dot_indicator(component, pads, pads_text, orientation_position)
+    else:
+        pads_text = orientation.triangle_indicator(component, pads, pads_text, orientation_position)
+
+    if pin_counter == 1 or pin_counter == 2 or pin_counter == 3:
+            pads_text = orientation.counting_indicator(component, pads, pads_text, pin_counter)
+    
+
+    # Add text to lbr file
     for line in pads_text:
         append_txt(lib_name, line)
     return True
 
-# Package wire lines
-
-def package_wires_txt(lib_name, component, x_space):
+# Footprint wire text lines
+def footprint_wires_txt(lib_name, component, x_space, y_space):
     # Create list to store the text
     pkg_wire_text = list()
 
-    # tdocument
+    # - - - Tdocument - - -
 
-    # Get first position based component size
+    # Position based on component size
     d_x_pos = component['width']/2
     d_y_pos = component['length']/2
 
-    # Width of the line 0.05
+    # Line width
     d_width = 0.05
 
-    # Create tdocument layer wires text
+    # Tdocument layer wires text
     pkg_wire_text.append(
         f"<wire x1=\"-{d_x_pos}\" y1=\"{d_y_pos}\" x2=\"{d_x_pos}\" y2=\"{d_y_pos}\" width=\"{d_width}\" layer=\"51\"/>")
     pkg_wire_text.append(
@@ -460,68 +367,147 @@ def package_wires_txt(lib_name, component, x_space):
     pkg_wire_text.append(
         f"<wire x1=\"-{d_x_pos}\" y1=\"-{d_y_pos}\" x2=\"-{d_x_pos}\" y2=\"{d_y_pos}\" width=\"{d_width}\" layer=\"51\"/>")
 
-    # tplace
+    # Orientation
 
-    # Width of the line 0.1
+    # Single
+    if component['package_type'] == "single_package":
+            # Circle radius
+            radius = round(d_x_pos / 15, 2)
+            # Circle width
+            c_width = round(d_x_pos / 15, 2)
+
+            # Circle position
+            c_x_pos = round(-d_x_pos + radius + (2 * c_width), 2)
+            c_y_pos = round(-d_y_pos + radius + (2 * c_width), 2)
+
+            # Tdocument layer circle
+            pkg_wire_text.append(
+                f"<circle x=\"{c_x_pos}\" y=\"{c_y_pos}\" radius=\"{radius}\" width=\"{c_width}\" layer=\"51\"/>")
+
+    # Dual
+    elif component['package_type'] == "dual_package":
+        # Half-moon
+
+        # Tdocument layer half-moon
+        pkg_wire_text.append(
+            f"<wire x1=\"-{d_x_pos/2}\" y1=\"{d_y_pos}\" x2=\"{d_x_pos/2}\" y2=\"{d_y_pos}\" width=\"{d_width}\" layer=\"51\" curve=\"180\"/>")
+        
+    # Quad
+    elif component['package_type'] == "quad_package":
+        # Circle radius
+        radius = round(d_x_pos / 15, 2)
+        # Circle Width
+        c_width = round(d_x_pos / 15, 2)
+
+        # Circle coordinates
+        c_x_pos = round(-d_x_pos + radius + (2 * c_width), 2)
+        c_y_pos = round(d_y_pos - radius - (2 * c_width), 2)
+
+        # Tdocument layer circle
+        pkg_wire_text.append(
+            f"<circle x=\"{c_x_pos}\" y=\"{c_y_pos}\" radius=\"{radius}\" width=\"{c_width}\" layer=\"51\"/>")
+
+    # - - - Tplace - - -
+
+    # Tplace wires width
     p_width = 0.1
     # Based on pads sizing - a fixed ammount so it doesn't cover the pads
     # get x_pos by using between pads space and subtrating a fixed value
 
-    p_x_pos = (x_space / 2) - (0.25 * (x_space / 2))
+    if x_space and not y_space:
+        p_x_pos = (x_space / 2) - (0.25 * (x_space / 2))
 
-    # get y_pos by using the ratio of reduction of x
-    p_y_pos = d_y_pos * (p_x_pos / d_x_pos)
+        # get y_pos by using the ratio of reduction of x
+        p_y_pos = d_y_pos * (p_x_pos / d_x_pos)
+    
+    elif y_space and not x_space:
+        p_y_pos = (y_space / 2) - (0.25 * (y_space / 2))
+
+        # get x_pos by using the ratio of reduction of y
+        p_x_pos = d_x_pos * (p_y_pos / d_y_pos)
+
+    else:
+        p_x_pos = (x_space / 2) - (0.25 * (x_space / 2))
+        p_y_pos = (y_space / 2) - (0.25 * (y_space / 2))
 
     p_x_pos = round(p_x_pos, 2)
     p_y_pos = round(p_y_pos, 2)
 
     # Create tplace layer wires
-    pkg_wire_text.append(
-        f"<wire x1=\"-{p_x_pos}\" y1=\"{p_y_pos}\" x2=\"{p_x_pos}\" y2=\"{p_y_pos}\" width=\"{p_width}\" layer=\"21\"/>")
-    pkg_wire_text.append(
-        f"<wire x1=\"{p_x_pos}\" y1=\"{p_y_pos}\" x2=\"{p_x_pos}\" y2=\"{-p_y_pos}\" width=\"{p_width}\" layer=\"21\"/>")
-    pkg_wire_text.append(
-        f"<wire x1=\"{p_x_pos}\" y1=\"-{p_y_pos}\" x2=\"-{p_x_pos}\" y2=\"{-p_y_pos}\" width=\"{p_width}\" layer=\"21\"/>")
-    pkg_wire_text.append(
-        f"<wire x1=\"-{p_x_pos}\" y1=\"-{p_y_pos}\" x2=\"-{p_x_pos}\" y2=\"{p_y_pos}\" width=\"{p_width}\" layer=\"21\"/>")
 
-    # create orientation circle or line
+    # If there is no thermal pad draw lines
+    if component['center_pad'] == 0 :
 
-    # Radius got from tplace
-    radius = round(p_x_pos / 4, 2)
-    # Width
-    c_width = 0.127
+        # Tplace layer wires text
+        pkg_wire_text.append(
+            f"<wire x1=\"-{p_x_pos}\" y1=\"{p_y_pos}\" x2=\"{p_x_pos}\" y2=\"{p_y_pos}\" width=\"{p_width}\" layer=\"21\"/>")
+        pkg_wire_text.append(
+            f"<wire x1=\"{p_x_pos}\" y1=\"{p_y_pos}\" x2=\"{p_x_pos}\" y2=\"{-p_y_pos}\" width=\"{p_width}\" layer=\"21\"/>")
+        pkg_wire_text.append(
+            f"<wire x1=\"{p_x_pos}\" y1=\"-{p_y_pos}\" x2=\"-{p_x_pos}\" y2=\"{-p_y_pos}\" width=\"{p_width}\" layer=\"21\"/>")
+        pkg_wire_text.append(
+            f"<wire x1=\"-{p_x_pos}\" y1=\"-{p_y_pos}\" x2=\"-{p_x_pos}\" y2=\"{p_y_pos}\" width=\"{p_width}\" layer=\"21\"/>")
 
-    # Circle position
-    c_x_pos = round(-p_x_pos + radius + (2 * c_width), 2)
-    c_y_pos = round(p_y_pos - radius - (2 * c_width), 2)
+        # Single
+        if component['package_type'] == "single_package":
+            # Orientation circle
 
-    # Create tplace layer circle
-    pkg_wire_text.append(
-        f"<circle x=\"{c_x_pos}\" y=\"{c_y_pos}\" radius=\"{radius}\" width=\"{c_width}\" layer=\"21\"/>")
+            # Radius got from tplace
+            radius = round(p_x_pos / 8, 2)
+            # Width
+            c_width = round(p_x_pos / 8, 2)
+
+            # Circle position
+            c_x_pos = round(-p_x_pos + radius + (2 * c_width), 2)
+            c_y_pos = round(-p_y_pos + radius + (2 * c_width), 2)
+
+            # Create tplace layer circle
+            pkg_wire_text.append(
+                f"<circle x=\"{c_x_pos}\" y=\"{c_y_pos}\" radius=\"{radius}\" width=\"{c_width}\" layer=\"21\"/>")
+
+        # Dual
+        elif component['package_type'] == "dual_package":
+            # Orientation half-moon
+            pkg_wire_text.append(
+                f"<wire x1=\"-{p_x_pos/2}\" y1=\"{p_y_pos}\" x2=\"{p_x_pos/2}\" y2=\"{p_y_pos}\" width=\"{p_width}\" layer=\"21\" curve=\"180\"/>")
+        
+        # Quad
+        else:
+            # Orientation circle
+
+            # Radius got from tplace
+            radius = round(p_x_pos / 15, 2)
+            # Width
+            c_width = round(p_x_pos / 15, 2)
+
+            # Circle position
+            c_x_pos = round(-p_x_pos + radius + (2 * c_width), 2)
+            c_y_pos = round(p_y_pos - radius - (2 * c_width), 2)
+
+            # Create tplace layer circle
+            pkg_wire_text.append(
+                f"<circle x=\"{c_x_pos}\" y=\"{c_y_pos}\" radius=\"{radius}\" width=\"{c_width}\" layer=\"21\"/>")
 
     pkg_wire_text.append("</package>")
     pkg_wire_text.append("</packages>")
 
-    # Append lines of text to lbr file
+    # Add text to lbr file
     for line in pkg_wire_text:
         append_txt(lib_name, line)
 
     return True
 
-# --- Symbol ---
+# - - - Symbol - - -
 
 # Symbol wire lines
-
-
 def symbol_wires_txt(lib_name, component, cordinates):
-    # Create list to store the text
+    # Symbol text lines
     sy_wire_text = list()
 
     sy_wire_text.append("<symbols>")
     sy_wire_text.append(f"<symbol name=\"{component['name']}\">")
 
-    # Create symbol wires text
+    # Symbol wires text
     sy_wire_text.append(
         f"<wire x1=\"{cordinates[0]}\" y1=\"{cordinates[1]}\" x2=\"{cordinates[2]}\" y2=\"{cordinates[3]}\" width =\"0.254\" layer =\"94\"/>")
     sy_wire_text.append(
@@ -531,26 +517,24 @@ def symbol_wires_txt(lib_name, component, cordinates):
     sy_wire_text.append(
         f"<wire x1=\"{cordinates[6]}\" y1=\"{cordinates[7]}\" x2=\"{cordinates[0]}\" y2=\"{cordinates[1]}\" width=\"0.254\" layer=\"94\"/>")
 
-    # Create symbol details text
+    # Symbol details text
     sy_wire_text.append(
-        f"<text x=\"21.59\" y=\"7.62\" align=\"center-left\" size=\"1.778\" layer=\"95\">&gt;{component['name']}</text>")
+        f"<text x=\"{cordinates[2] + 1.24}\" y=\"{cordinates[3] + 2.54}\" align=\"center-left\" size=\"1.778\" layer=\"95\">&gt;{component['name']}</text>")
     sy_wire_text.append(
-        f"<text x=\"21.59\" y=\"5.08\" align=\"center-left\" size=\"1.778\" layer=\"96\">&gt;{component['value']}</text>")
+        f"<text x=\"{cordinates[2] + 1.24}\" y=\"{cordinates[3] }\" align=\"center-left\" size=\"1.778\" layer=\"96\">&gt;{component['value']}</text>")
 
-    # Append lines of text to lbr file
+    # Add text to lbr file
     for line in sy_wire_text:
         append_txt(lib_name, line)
 
     return True
 
-# Symbol pins lines
-
-
+# Symbol pins text
 def symbol_pins_txt(lib_name, pins):
-    # Create list to store the text
+    # Pins text lines
     pins_text = list()
 
-    # Create symbol pins text
+    # Symbol pins text
     for pin in pins:
         pins_text.append(
             f"<pin name=\"{pin['name']}\" x=\"{pin['x']}\" y=\"{pin['y']}\" length=\"middle\" direction=\"{pin['direction']}\" rot=\"{pin['side']}\"/>")
@@ -558,7 +542,7 @@ def symbol_pins_txt(lib_name, pins):
     pins_text.append("</symbol>")
     pins_text.append("</symbols>")
 
-    # Append lines of text to lbr file
+    # Add text to lbr file
     for line in pins_text:
         append_txt(lib_name, line)
 
@@ -568,7 +552,7 @@ def symbol_pins_txt(lib_name, pins):
 
 def device_sets_txt(lib_name, component):
     # Create the var to store the text
-    device_text_part = f"""
+    device_text_lines = f"""
 <devicesets>
 <deviceset name="{component['name']}" prefix="IC">
 <description>&lt;b&gt;{component['description']}&lt;/b&gt;&lt;p&gt;
@@ -579,25 +563,26 @@ Source: &lt;a href="{component['datasheet']}"&gt; Datasheet &lt;/a&gt;</descript
 <devices>
 <device name="" package="{component['package']}">
 """
-    # Append lines of text to lbr file
-    append_txt(lib_name, device_text_part)
+    # Add text to lbr file
+    append_txt(lib_name, device_text_lines)
 
     return True
 
 
-# Connects pin name to pad
+# Connect pin name to pad function
 def connects_txt(lib_name, smd_pads, pins):
-    # Create list to store the text
+    # Connects text list
     connects_text = list()
-
-    pin_names = list()
     connects_text.append("<connects>")
 
+    # Pin names list
+    pin_names = list()
+    
     for pin in pins:
         pin_names.append(pin['name'])
 
     i = 0
-    # Create connects text
+    # Connects text
     for pad in smd_pads:
         connects_text.append(
             f"<connect gate=\"G$1\" pin=\"{pin_names[i]}\" pad=\"{pad['name']}\"/>")
@@ -605,7 +590,7 @@ def connects_txt(lib_name, smd_pads, pins):
 
     connects_text.append("</connects>")
 
-    # Append lines of text to lbr file
+    # Add text to lbr file
     for line in connects_text:
         append_txt(lib_name, line)
 
@@ -613,9 +598,8 @@ def connects_txt(lib_name, smd_pads, pins):
 
 # Technologies text function
 def technologies_txt(lib_name, component):
-    # Create a string to store the text
 
-    technologies_part = f"""<technologies>"
+    technologies_text_lines = f"""<technologies>"
 <technology name="">
 <attribute name="Manufacturer_Name" value="" constant="no"/>
 <attribute name="Manufacturer_Part_Number" value="" constant="no"/>
@@ -632,13 +616,13 @@ def technologies_txt(lib_name, component):
 </eagle>
 """
 
-    # Append lines of text to lbr file
-    append_txt(lib_name, technologies_part)
+    # Add text to lbr file
+    append_txt(lib_name, technologies_text_lines)
 
     return True
 
 # ----------------- Lbr Creation Part -----------------
-# Create first part of the lbr file
+# First part of the lbr file
 
 def create_txt(new_file, component):
 
@@ -717,12 +701,9 @@ def create_txt(new_file, component):
 
         return True
 
-# Append text function
+# Add text to lbr file function
 def append_txt(file_edit, text):
     with open(f"{file_edit}.lbr", "a") as output:
         output.write(text + "\n")
         return True
 
-
-if __name__ == "__main__":
-    main()
