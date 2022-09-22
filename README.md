@@ -7,7 +7,7 @@ The library creation option is not difficult to use, however for simple designs 
 
 The ideia behind this program is to be a simpler Autodesk Eagle component library creator, using only some command line inputs which then creates the lbr file to be imported by the Autodesk Eagle software.
 
-For now it only creates a library with a single component symbol and some IC packages, but the objective is to diversify to more package types and more symbols in a library.
+For now it only creates a library for a single component in a small list of IC packages , but the objective is to diversify to have more package types.
 
 ## Features
 - Supports Single Package SMT components ( SIL )
@@ -20,7 +20,7 @@ For now it only creates a library with a single component symbol and some IC pac
 
 - Creates the component symbol.
 
-- Creates the component package.
+- Creates the component footprint.
 
 ## Usage
 The program asks for information to create the library, some is required other is opcional.
