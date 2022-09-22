@@ -7,14 +7,20 @@ The library creation option is not difficult to use, however for simple designs 
 
 The ideia behind this program is to be a simpler Autodesk Eagle component library creator, using only some command line inputs which then creates the lbr file to be imported by the Autodesk Eagle software.
 
-For now it only creates a library with a single component symbol and a single SOP package, but the objective is to diversify to more package types and more symbols in a library.
+For now it only creates a library with a single component symbol and some IC packages, but the objective is to diversify to more package types and more symbols in a library.
 
 ## Features
-- Creates the SOP component library.
+- Supports Single Package SMT components ( SIL )
 
-- Creates the SOP component symbol.
+- Supports Small Outline Package components ( DFN, DIL, SOIC, SOJ, SON, PSON, WSON, USON, SOP, CSOP, DSOP, HSOP, SSOP, TSOP, HTSOP, VSOP, TVSOP, MSOP, PSOP, QSOP, SSOP, HSSOP,  TSSOP, VSSOP, HTSSOP, TSOP)
 
-- Creates the SOP component package.
+- Supports Quad Flat Package components ( DFN, QFN, PQFN, UQFN, VQFN, HVQFN, WQFN, CFP, QFP,  BQFP, CQFP, LQFP, MQFP, PQFP, TQFP, ETQFP, VQFP)
+
+- Creates the component library.
+
+- Creates the component symbol.
+
+- Creates the component package.
 
 ## Usage
 The program asks for information to create the library, some is required other is opcional.
@@ -49,99 +55,107 @@ https://www.onsemi.com/pub/Collateral/LM555-D.pdf
 
 Question 6:
 - What is the package? (required)
-SOIC 8L
+SOIC
 
 Question 7:
 - How many pins does it have? (required)
 8
 
 Question 8:
+- Does it have a Bottom/Center/Thermal pad? (required)
+n
+
+Question 9:
 - What is the lenght(L)? (mm) (required)
 4.90
 
-Question 9:
+Question 10:
 - What is the width(W)? (mm) (required)
 3.90
 
-Question 10:
+Question 11:
 - How much is the spacing(S) between pins? (mm) (required)
 1.27
 
-Question 11:
+Question 12:
 - How much is the length of the pad? (mm) (required)
 1.75
 
-Question 12:
+Question 13:
 - How much is the width of the pad? (mm) (required)
 0.65
 
-Question 13:
-- How much is the distance(P) between the pads center? (mm) (required)
+Question 14:
+- How much is the distance(P) between the Left and Righ pads center? (mm) (required)
 5.60
 
-Question 14:
+Question 15:
+- What is the Orientation symbol? (required)
+0
+
+Question 16:
 - What is the name of pin1 ? (required)
 GND
 
-Question 15:
+Question 17:
 - What is the direction of pin1 ? (required)
-pwr
+8
 
-Question 16:
+Question 18:
 - What is the name of pin2 ? (required)
 TRIG
 
-Question 17:
+Question 19:
 - What is the direction of pin2 ? (required)
-in
+2
 
-Question 18:
+Question 20:
 - What is the name of pin3 ? (required)
 OUT
 
-Question 19:
+Question 21:
 - What is the direction of pin3 ? (required)
-out
+3
 
-Question 20:
+Question 22:
 - What is the name of pin4 ? (required)
 RESET
 
-Question 21:
+Question 23:
 - What is the direction of pin4 ? (required)
-in
+2
 
-Question 22:
+Question 24:
 - What is the name of pin5 ? (required)
 CONT
 
-Question 23:
+Question 25:
 - What is the direction of pin5 ? (required)
-io
+4
 
-Question 24:
+Question 26:
 - What is the name of pin6 ? (required)
 THRES
 
-Question 25:
+Question 27:
 - What is the direction of pin6 ? (required)
-in
+2
 
-Question 26:
+Question 28:
 - What is the name of pin7 ? (required)
 DISCH
 
-Question 27:
+Question 29:
 - What is the direction of pin7 ? (required)
 out
 
-Question 28:
+Question 30:
 - What is the name of pin8 ? (required)
 VCC
 
-Question 29:
+Question 31:
 - What is the direction of pin8 ? (required)
-pwr
+8
 
 ```
 
